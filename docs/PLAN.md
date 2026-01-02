@@ -144,7 +144,7 @@ Cada 2 horas (Azure Function Timer Trigger):
 ```
 
 ### Heartbeat de máquina local
-- El worker local envía un heartbeat cada 30 segundos a un endpoint del backend
+- El worker local envía un heartbeat cada 60 segundos a un endpoint del backend
 - El backend guarda el timestamp del último heartbeat en Cosmos DB
 - Si el heartbeat tiene más de 2 minutos de antigüedad → máquina considerada offline
 
@@ -169,17 +169,66 @@ Cada 2 horas (Azure Function Timer Trigger):
 
 ## Modelo Freemium
 
-| Feature | Free | Premium ($X/mes) |
+| Feature | Free | Premium ($5/mes) |
 |---------|------|-------------------|
-| Canciones procesadas/mes | 3 | Ilimitadas |
-| Biblioteca MIDI | Búsqueda limitada | Completa |
-| Visualización | Piano roll básico | Partitura + Tab + Piano roll |
+| Canciones nuevas | 1 cada 3 días | 10 por día |
+| Prioridad de procesamiento | Cola normal (indicador de turno) | Prioridad (salta al frente) |
+| Biblioteca pública | ❌ (solo sus propias canciones) | ✅ (acceso a todas) |
+| Practicar canciones propias | Ilimitado | Ilimitado |
+| Visualización | Todas, con sistema de energía diaria | Todas, ilimitado |
 | Exportar MIDI/Partitura | ❌ | ✅ |
 | Velocidad de playback | 1x | 0.25x - 2x |
-| Loop de secciones | ❌ | ✅ |
+| Loop de secciones | ✅ | ✅ |
 | Reemplazo de instrumento | ❌ | ✅ |
+| Rachas y dominio | ✅ | ✅ |
+| Sistema social (seguir) | ✅ | ✅ |
 | Ads | Sí | No |
-| Calidad de stems | Standard | Alta (6 stems) |
+| Notificación "ya puedes subir" | ✅ (email) | N/A |
+
+### Procesamiento y cola
+- **Premium**: prioridad en cola (salta al frente). A1000 local primero, ACI si offline.
+- **Free**: cola normal con indicador de turno ("Eres el #3, ~5 min").
+- **Biblioteca compartida**: toda canción procesada se suma a la biblioteca pública. Si un usuario sube una que ya existe, se sirve de biblioteca (al premium se le cuenta como 1 de sus 10/día).
+- **Rating**: usuarios califican canciones con estrellas (1-5).
+
+### Gamificación — Dominio de canción
+
+**Detección de secciones:**
+- Automática por análisis de estructura musical (repeticiones, cambios de energía)
+- Manual: el usuario puede marcar/editar secciones
+
+**Porcentaje de dominio:**
+- Se mide por secciones. Ej: 5 secciones, 3 dominadas = 60%
+- Sección "dominada": reproducida en loop ≥3 veces, o si pasa a la siguiente y vuelve
+- Escuchar completa sin pausas NO cuenta como dominio
+- Pausar en 10+ secciones diferentes empieza a contar progreso
+
+**Badge "Canción dominada":**
+- Reproducir canción completa sin pausas 3 veces
+- Solo se activa después de haber hecho loops en secciones
+- Aparece en feed: "🏆 Juan dominó Hotel California"
+
+### Gamificación — Rachas
+
+- Racha diaria: ≥1 sección en loop O cumplir meta de tiempo
+- Meta configurable: 5, 10, 15, 30 min/día
+- Indicador visual: streak counter en dashboard
+- Se pierde si no practica en un día
+
+### Sistema Social
+
+- Seguir usuarios por username o email (no requiere aceptación)
+- **Feed**:
+  - "🎯 Juan dominó 80% de Bohemian Rhapsody"
+  - "🏆 María dominó Stairway to Heaven"
+  - "🔥 Carlos lleva 15 días de racha"
+- Perfil público: canciones en progreso, % dominio, racha, dominadas
+
+### Notificaciones email
+
+- Free: "¡Ya puedes subir una nueva canción!" (cada 3 días)
+- Todos: "Tu canción está lista" (post-procesamiento)
+- Rachas: "¡No pierdas tu racha de X días!" (recordatorio)
 
 ---
 
