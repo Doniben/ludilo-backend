@@ -1,13 +1,7 @@
 import azure.functions as func
-import json
-import logging
+from routes.auth import bp as auth_bp
+from routes.health import bp as health_bp
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-
-
-@app.route(route="health", methods=["GET"])
-def health(req: func.HttpRequest) -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps({"status": "ok", "service": "ludilo-api"}),
-        mimetype="application/json",
-    )
+app.register_functions(auth_bp)
+app.register_functions(health_bp)
