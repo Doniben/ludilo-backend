@@ -90,6 +90,37 @@ Basada en los proyectos de EsperantoCo (SAI):
 6. **Presupuesto ACI**: alerta a $10/mes
 7. **Bibliotecas MIDI**: Lakh (176K) + Los Angeles (405K) + GigaMIDI (1.4M) + .gp personales
 8. **Archivos .gp**: PyGuitarPro para leer, GuitarPro-to-Midi para convertir
+9. **Commits distribuidos**: no push el mismo día. Se acumulan y publish.sh los distribuye en la semana
+10. **Issues**: se mueven a Done en el tablero inmediato, pero se cierran distribuidos (cuenta como contribución)
+11. **Deploy a Azure**: inmediato, no depende de los commits a GitHub
+12. **Backend se prueba en Azure**: Python 3.12 en Azure, local no compatible con func tools 4.0.6821. No correr func start local.
+13. **Frontend apunta a Azure**: .env tiene `VITE_API_URL=https://ludilo-api.azurewebsites.net/api`
+14. **Errores i18n**: backend envía códigos (INVALID_CREDENTIALS, etc), frontend los traduce según idioma
+15. **Sin emojis en UI**: usar Heroicons (ya instalado @heroicons/react)
+16. **Light mode**: usa ludilo-700 (teal oscuro) en vez de neon-cyan. Clase utilitaria `text-accent`
+17. **Auth state en Navbar**: se actualiza con evento custom `ludilo-auth` (dispatchEvent)
+18. **Azure Functions modelo v2** (blueprints): function_app.py registra blueprints de routes/
+19. **CORS**: configurado en Azure (`*`) + headers en código (shared/response.py)
+20. **Heartbeat worker**: cada 60 segundos (no 30)
+
+## Hallazgos Técnicos
+
+- **Vite 8** requiere Node ≥20.19 o ≥22.12. Usar Node 22 con nvm.
+- **Azure Functions Core Tools 4.0.6821** no tiene worker para Python 3.12 en macOS. No se puede correr local.
+- **CORS en Azure Functions**: configurar `*` en portal NO es suficiente si hay otros orígenes listados. Dejar solo `*`. Además agregar headers en código.
+- **localStorage + React**: cambios en localStorage no disparan re-render en otros componentes. Usar eventos custom.
+- **Static Web Apps**: al vincular con GitHub, Azure crea un commit automático con el workflow de GitHub Actions.
+- **Vite .env**: `.env.local` tiene prioridad sobre `.env`. Si existe, sobreescribe variables.
+- **Vite puerto**: no siempre usa 5173, puede asignar 5174, 5175, etc. si el puerto está ocupado.
+
+## URLs de Producción
+
+- **Frontend**: https://green-flower-089c5500f.7.azurestaticapps.net
+- **Backend API**: https://ludilo-api.azurewebsites.net/api
+- **Health check**: https://ludilo-api.azurewebsites.net/api/health
+- **Cosmos DB**: https://ludilodb.documents.azure.com:443/
+- **Blob Storage**: https://stludilo.blob.core.windows.net/
+- **Proyecto GitHub**: https://github.com/users/Doniben/projects/1
 
 ## Comandos Útiles
 
@@ -97,16 +128,18 @@ Basada en los proyectos de EsperantoCo (SAI):
 # Frontend
 cd /Users/doniben/Documents/PROGRAMMING-GIT/Ludilo/ludilo-frontend
 export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 22
-npm run dev    # http://localhost:5173
+npm run dev    # http://localhost:5173 (apunta a Azure backend)
 npm run build  # verificar build
 
-# Backend (cuando esté listo)
-cd /Users/doniben/Documents/PROGRAMMING-GIT/Ludilo/ludilo-backend
-func start     # Azure Functions local
+# Backend - deploy a Azure
+cd /Users/doniben/Documents/PROGRAMMING-GIT/Ludilo/ludilo-backend/functions
+func azure functionapp publish ludilo-api
+
+# Backend - NO se corre local (Python 3.12 en Azure, local no compatible)
+# Todo se prueba contra: https://ludilo-api.azurewebsites.net/api
 
 # GitHub
 gh issue list --repo Doniben/ludilo-backend --milestone "Sprint 1 - Setup & Auth"
-gh issue close <N> --repo Doniben/ludilo-backend
 ```
 
 ## Cuentas y Accesos

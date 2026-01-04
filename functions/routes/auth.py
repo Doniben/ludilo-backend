@@ -25,13 +25,13 @@ def register(req: func.HttpRequest) -> func.HttpResponse:
     username = body.get("username", "").strip()
 
     if not email or not password or not username:
-        return response({"error": "email, password, username required"}, 400)
+        return response({"error": "FIELDS_REQUIRED"}, 400)
 
     container = get_container("users")
     query = "SELECT c.id FROM c WHERE c.email = @email"
     existing = list(container.query_items(query=query, parameters=[{"name": "@email", "value": email}], enable_cross_partition_query=True))
     if existing:
-        return response({"error": "Email already registered"}, 409)
+        return response({"error": "EMAIL_ALREADY_REGISTERED"}, 409)
 
     user_id = secrets.token_hex(16)
     user = {
@@ -66,14 +66,14 @@ def login(req: func.HttpRequest) -> func.HttpResponse:
     password = body.get("password", "")
 
     if not email or not password:
-        return response({"error": "email and password required"}, 400)
+        return response({"error": "FIELDS_REQUIRED"}, 400)
 
     container = get_container("users")
     query = "SELECT * FROM c WHERE c.email = @email"
     users = list(container.query_items(query=query, parameters=[{"name": "@email", "value": email}], enable_cross_partition_query=True))
 
     if not users or users[0]["password"] != hash_password(password):
-        return response({"error": "Invalid credentials"}, 401)
+        return response({"error": "INVALID_CREDENTIALS"}, 401)
 
     user = users[0]
     token = generate_token(user["id"])
