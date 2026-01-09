@@ -184,4 +184,14 @@ def list_songs(req: func.HttpRequest) -> func.HttpResponse:
     query = "SELECT c.id, c.title, c.status, c.format, c.createdAt FROM c WHERE c.userId = @userId ORDER BY c.createdAt DESC"
     songs = list(container.query_items(query=query, parameters=[{"name": "@userId", "value": user["id"]}], enable_cross_partition_query=True))
 
+    # Add queue position for queued songs
+    queued_songs = [s for s in songs if s["status"] == "queued"]
+    if queued_songs:
+        conn_str = os.environ["STORAGE_CONNECTION_STRING"]
+        queue_name = "audio-processing-priority" if user["plan"] == "premium" else "audio-processing-queue"
+        queue_client = QueueClient.from_connection_string(conn_str, queue_name)
+        total_in_queue = queue_client.get_queue_properties().approximate_message_count
+        for i, s in enumerate(queued_songs):
+            s["position"] = min(i + 1, total_in_queue)
+
     return response({"songs": songs})
