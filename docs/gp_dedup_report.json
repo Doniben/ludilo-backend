@@ -1,0 +1,158 @@
+{
+  "total_files_scanned": 94109,
+  "unique_songs": 63744,
+  "duplicates_removed": 30365,
+  "unique_artists": 7689,
+  "genres_found": [
+    "Banjo",
+    "Blues_Jazz",
+    "Bossa_Salsa",
+    "Christian",
+    "Classic",
+    "Competitions",
+    "Compositions",
+    "Country_Folk",
+    "Exercises",
+    "Extreme",
+    "Flamenco",
+    "Fusion_Alternative",
+    "Hard_Heavy",
+    "Melodic_Metal",
+    "Musical_Comedy",
+    "Neo_Metal_Indus",
+    "Other",
+    "Picking",
+    "Pop_Rock",
+    "Progressive",
+    "Punk_Grunge",
+    "Rap_Hip_Hop",
+    "Reggae",
+    "Soul_Funk",
+    "TV_Movie_Games",
+    "Traditionnal",
+    "World_Music"
+  ],
+  "top_artists": [
+    [
+      "metallica",
+      411
+    ],
+    [
+      "composers of msb",
+      381
+    ],
+    [
+      "red hot chili peppers",
+      355
+    ],
+    [
+      "iron maiden",
+      344
+    ],
+    [
+      "megadeth",
+      247
+    ],
+    [
+      "blink 182",
+      245
+    ],
+    [
+      "dream theater",
+      240
+    ],
+    [
+      "queen",
+      239
+    ],
+    [
+      "beatles",
+      227
+    ],
+    [
+      "beatles the",
+      215
+    ],
+    [
+      "pink floyd",
+      208
+    ],
+    [
+      "guns n roses",
+      201
+    ],
+    [
+      "led zeppelin",
+      199
+    ],
+    [
+      "nirvana",
+      198
+    ],
+    [
+      "master gold",
+      194
+    ],
+    [
+      "rush",
+      192
+    ],
+    [
+      "smashing pumpkins",
+      192
+    ],
+    [
+      "van halen",
+      189
+    ],
+    [
+      "nofx",
+      187
+    ],
+    [
+      "kiss",
+      186
+    ],
+    [
+      "slayer",
+      179
+    ],
+    [
+      "in flames",
+      174
+    ],
+    [
+      "guitar player licks and lessons",
+      173
+    ],
+    [
+      "radiohead",
+      172
+    ],
+    [
+      "tv and movie theme songs",
+      166
+    ],
+    [
+      "muse",
+      165
+    ],
+    [
+      "system of a down",
+      163
+    ],
+    [
+      "deep purple",
+      160
+    ],
+    [
+      "pearl jam",
+      159
+    ],
+    [
+      "korn",
+      157
+    ]
+  ],
+  "size_total_mb": 1663.4
+}
