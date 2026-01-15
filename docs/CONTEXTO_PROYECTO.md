@@ -148,3 +148,34 @@ gh issue list --repo Doniben/ludilo-backend --milestone "Sprint 1 - Setup & Auth
 - **Azure**: az CLI logueado en terminal
 - **Región Azure preferida**: por definir (eastus2 propuesto)
 - **Email notificaciones**: doniben@esperanto.co
+
+## Estrategia de Formatos de Biblioteca
+
+### Por qué indexamos .gp (Guitar Pro) además de MIDI
+
+Los archivos `.gp` son **más ricos** que MIDI para nuestro caso de uso:
+
+| Dato | .gp | MIDI |
+|------|-----|------|
+| Notas y timing | ✅ | ✅ |
+| Posición en diapasón (cuerda + traste) | ✅ | ❌ |
+| Afinación por cuerda | ✅ | ❌ |
+| Técnicas (bend, slide, hammer-on, etc.) | ✅ | ❌ |
+| Estructura (secciones) | ✅ | ❌ |
+
+### Flujo de entrega al frontend
+
+| Fuente | Piano roll / Partitura | Tablatura |
+|--------|----------------------|-----------|
+| .gp | Convertir a MIDI (trivial, GuitarPro-to-Midi) | Leer directo con PyGuitarPro ✅ |
+| MIDI (Lakh/LA) | Usar directo ✅ | Requiere algoritmo S8-05 (asignar posiciones en diapasón) |
+
+### Prioridad de entrega
+
+1. Si hay `.gp` → preferir siempre (tablatura precisa + MIDI derivado para piano roll)
+2. Si solo hay MIDI → piano roll directo, tablatura con heurística (S8-05)
+
+### Pre-procesamiento futuro
+
+- Generar MIDI derivado de cada .gp (batch o on-demand) para servir piano roll sin conversión en tiempo real
+- Enriquecer metadata de .gp con PyGuitarPro (instrumentos, afinación, tempo) — tarea background
