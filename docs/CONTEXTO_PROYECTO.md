@@ -69,16 +69,44 @@ Basada en los proyectos de EsperantoCo (SAI):
 ### Completado
 - [x] S1-01: Repos creados y pusheados
 - [x] S1-02: Setup frontend (React + Vite + Tailwind + i18n + theme)
+- [x] S1-03: Setup backend (Azure Functions Python v4)
+- [x] S1-08/09/10: Auth (registro, Google OAuth, login)
+- [x] S1-12/13: Frontend (login, registro, dashboard)
+- [x] S2-01/02/03/04: Endpoints upload, process, status, list songs
+- [x] S2-05/06: Upload integrado en dashboard con drag&drop
+- [x] S2-07/11: Indicador de progreso + posición en cola
+- [x] S5-03/04/05/06: Timer trigger ACI, heartbeat, email notificación
+- [x] S5-07/08: Levantar/apagar ACI según heartbeat y cola
+- [x] S6-05: Indexar metadata GP en Cosmos DB (66,435 docs)
+- [x] S6-08: Frontend - Modal "encontramos esta canción" en upload
+- [x] S6-10: API búsqueda en biblioteca (GET /library/search?q=)
+- [x] S6-12: Frontend - Explorar biblioteca (/library)
+- [x] S6-14: Importar biblioteca Guitar Pro (66K archivos en Blob)
 
-### Siguiente
-- [ ] S1-03: Setup backend (Azure Functions Python v4)
-- [ ] S1-04: Crear Resource Group en Azure
-- [ ] S1-05: Crear Cosmos DB serverless
-- [ ] S1-06: Crear Storage Account con containers
-- [ ] S1-07: Crear Queue Storage
-- [ ] S1-08-10: Auth (registro, Google OAuth, login)
-- [ ] S1-11-13: Frontend (landing ✅, login/registro, dashboard)
-- [ ] S1-14-15: Deploy
+### En Progreso (background, 16 mayo 2026)
+- [ ] S6-01: Lakh MIDI — 178K subidos a Blob, indexación en Cosmos DB ~80% (PID 46548)
+- [ ] S6-02: LA MIDI — 404K archivos procesándose desde zip (subir + indexar, ~24h, PID 8581)
+
+### Procesos en Background
+- **Lakh indexación**: `tail -1 /tmp/ludilo-midi/lakh_index.log`
+- **LA MIDI (subir + indexar)**: `tail -1 /tmp/ludilo-midi/la_process.log`
+- Cuando terminen, verificar con: `python3 -c "from azure.cosmos import CosmosClient; ..."`
+
+### Siguiente (próxima sesión)
+- [ ] S6-04: Verificar que Lakh y LA MIDI estén completos en Blob Storage
+- [ ] S6-07: Matching audio → biblioteca MIDI (Chromaprint/AcoustID)
+- [ ] S6-09: Flujo normal si no hay match
+- [ ] S6-11: Frontend - Buscador de canciones (redundante con S6-12, cerrar)
+- [ ] Corregir artista en indexación GP (sale "Ludilo-Gp-Upload" en vez del artista real)
+- [ ] S6-03: Enriquecer metadata de GP con PyGuitarPro (tarea background futura)
+
+### Commits sin push (distribuir con publish.sh)
+- Backend: 10 commits adelante de origin/main
+- Frontend: 5 commits adelante de origin/main
+
+### Deploy
+- Backend desplegado en Azure Functions (incluye /library/search)
+- Frontend NO desplegado (tiene cambios de biblioteca + upload matching)
 
 ## Decisiones Tomadas
 
