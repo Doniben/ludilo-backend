@@ -64,8 +64,8 @@ def upload(req: func.HttpRequest) -> func.HttpResponse:
         last_upload = user.get("lastUpload")
         if last_upload:
             last_dt = datetime.fromisoformat(last_upload)
-            if (datetime.now(timezone.utc) - last_dt).days < 3:
-                return response({"error": "Plan free: 1 canción cada 3 días"}, 429)
+            if (datetime.now(timezone.utc) - last_dt).days < 0:
+                return response({"error": "UPLOAD_LIMIT_FREE"}, 429)
 
     # Create song record
     song_id = secrets.token_hex(16)
@@ -102,7 +102,26 @@ def upload(req: func.HttpRequest) -> func.HttpResponse:
 
     upload_url = f"https://{account_name}.blob.core.windows.net/audio/{blob_path}?{sas}"
 
-    return response({"songId": song_id, "uploadUrl": upload_url}, 201)
+    return response({"songId": song_id, "uploadUrl": upload_url, "blobPath": blob_path}, 201)
+
+
+
+@bp.route(route="songs/{songId}", methods=["DELETE", "OPTIONS"])
+def delete_song(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":
+        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+
+    user = get_user_from_token(req)
+    if not user:
+        return response({"error": "Unauthorized"}, 401)
+
+    song_id = req.route_params.get("songId")
+    songs_container = get_container("songs")
+    try:
+        songs_container.delete_item(item=song_id, partition_key=user["id"])
+    except Exception:
+        pass
+    return response({"deleted": True})
 
 
 @bp.route(route="songs/{songId}/process", methods=["POST", "OPTIONS"])
@@ -185,13 +204,13 @@ def list_songs(req: func.HttpRequest) -> func.HttpResponse:
     songs = list(container.query_items(query=query, parameters=[{"name": "@userId", "value": user["id"]}], enable_cross_partition_query=True))
 
     # Add queue position for queued songs
-    queued_songs = [s for s in songs if s["status"] == "queued"]
+    queued_songs = sorted([s for s in songs if s["status"] == "queued"], key=lambda x: x["createdAt"])
     if queued_songs:
         conn_str = os.environ["STORAGE_CONNECTION_STRING"]
         queue_name = "audio-processing-priority" if user["plan"] == "premium" else "audio-processing-queue"
         queue_client = QueueClient.from_connection_string(conn_str, queue_name)
         total_in_queue = queue_client.get_queue_properties().approximate_message_count
         for i, s in enumerate(queued_songs):
-            s["position"] = min(i + 1, total_in_queue)
+            s["position"] = i + 1
 
     return response({"songs": songs})
