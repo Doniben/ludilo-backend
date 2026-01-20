@@ -251,3 +251,81 @@ def library_preview(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Library preview error: {e}")
         return response({"error": str(e)}, 500)
+
+
+@bp.route(route="library/musicxml", methods=["GET", "OPTIONS"])
+def library_musicxml(req: func.HttpRequest) -> func.HttpResponse:
+    """Convierte MIDI a MusicXML. Cachea el resultado en Blob Storage."""
+    if req.method == "OPTIONS":
+        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+
+    blob_path = req.params.get("blobPath")
+    if not blob_path:
+        return response({"error": "blobPath required"}, 400)
+
+    try:
+        from datetime import datetime, timezone, timedelta
+        from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+        import tempfile
+
+        conn_str = os.environ["STORAGE_CONNECTION_STRING"]
+        blob_service = BlobServiceClient.from_connection_string(conn_str)
+        account_name = blob_service.account_name
+        account_key = conn_str.split("AccountKey=")[1].split(";")[0]
+
+        # Check if MusicXML already cached
+        musicxml_path = blob_path.rsplit(".", 1)[0] + ".musicxml"
+        cache_container = blob_service.get_container_client("library")
+        cache_blob = cache_container.get_blob_client(f"musicxml/{musicxml_path}")
+
+        try:
+            cache_blob.get_blob_properties()
+            # Cached! Return URL
+            sas = generate_blob_sas(
+                account_name=account_name,
+                container_name="library",
+                blob_name=f"musicxml/{musicxml_path}",
+                account_key=account_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=datetime.now(timezone.utc) + timedelta(minutes=30),
+            )
+            url = f"https://{account_name}.blob.core.windows.net/library/musicxml/{musicxml_path}?{sas}"
+            return response({"url": url, "cached": True})
+        except Exception:
+            pass  # Not cached, generate
+
+        # Download MIDI
+        source_container = blob_service.get_container_client("library")
+        source_blob = source_container.get_blob_client(blob_path)
+        midi_data = source_blob.download_blob().readall()
+
+        # Convert with music21
+        import music21
+        with tempfile.NamedTemporaryFile(suffix=".mid", delete=False) as tmp:
+            tmp.write(midi_data)
+            tmp_path = tmp.name
+
+        try:
+            score = music21.converter.parse(tmp_path)
+            musicxml_str = music21.musicxml.m21ToXml.GeneralObjectExporter(score).parse().decode("utf-8")
+        finally:
+            os.unlink(tmp_path)
+
+        # Cache the MusicXML
+        cache_blob.upload_blob(musicxml_str.encode("utf-8"), overwrite=True, content_settings={"content_type": "application/xml"})
+
+        # Return URL
+        sas = generate_blob_sas(
+            account_name=account_name,
+            container_name="library",
+            blob_name=f"musicxml/{musicxml_path}",
+            account_key=account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.now(timezone.utc) + timedelta(minutes=30),
+        )
+        url = f"https://{account_name}.blob.core.windows.net/library/musicxml/{musicxml_path}?{sas}"
+        return response({"url": url, "cached": False})
+
+    except Exception as e:
+        logging.error(f"MusicXML conversion error: {e}")
+        return response({"error": str(e)}, 500)
