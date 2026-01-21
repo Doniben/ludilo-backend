@@ -143,8 +143,11 @@ def library_search(req: func.HttpRequest) -> func.HttpResponse:
         params = [{"name": "@q", "value": q}]
 
         if source:
-            conditions.append("c.source = @source")
-            params.append({"name": "@source", "value": source})
+            if source == "midi":
+                conditions.append("(c.source = 'lakh' OR c.source = 'la-midi')")
+            else:
+                conditions.append("c.source = @source")
+                params.append({"name": "@source", "value": source})
 
         where = " AND ".join(conditions)
 
@@ -159,6 +162,9 @@ def library_search(req: func.HttpRequest) -> func.HttpResponse:
         items = list(container.query_items(
             query=data_query, parameters=params, enable_cross_partition_query=True
         ))
+        # Prioritize: guitarpro > lakh > la-midi
+        source_order = {"guitarpro": 0, "lakh": 1, "la-midi": 2}
+        items.sort(key=lambda x: source_order.get(x.get("source", ""), 9))
 
         return response({
             "results": items,
@@ -238,15 +244,20 @@ def library_preview(req: func.HttpRequest) -> func.HttpResponse:
         account_name = blob_service.account_name
         account_key = conn_str.split("AccountKey=")[1].split(";")[0]
 
+        # Fix Lakh paths: index has "lakh/x/..." but blob has "lakh/lmd_full/x/..."
+        actual_path = blob_path
+        if blob_path.startswith("lakh/") and not blob_path.startswith("lakh/lmd_full/"):
+            actual_path = blob_path.replace("lakh/", "lakh/lmd_full/", 1)
+
         sas = generate_blob_sas(
             account_name=account_name,
             container_name="library",
-            blob_name=blob_path,
+            blob_name=actual_path,
             account_key=account_key,
             permission=BlobSasPermissions(read=True),
             expiry=datetime.now(timezone.utc) + timedelta(minutes=10),
         )
-        url = f"https://{account_name}.blob.core.windows.net/library/{blob_path}?{sas}"
+        url = f"https://{account_name}.blob.core.windows.net/library/{actual_path}?{sas}"
         return response({"url": url})
     except Exception as e:
         logging.error(f"Library preview error: {e}")
@@ -296,7 +307,12 @@ def library_musicxml(req: func.HttpRequest) -> func.HttpResponse:
 
         # Download MIDI
         source_container = blob_service.get_container_client("library")
-        source_blob = source_container.get_blob_client(blob_path)
+        # Fix Lakh paths
+        actual_blob_path = blob_path
+        if blob_path.startswith("lakh/") and not blob_path.startswith("lakh/lmd_full/"):
+            actual_blob_path = blob_path.replace("lakh/", "lakh/lmd_full/", 1)
+
+        source_blob = source_container.get_blob_client(actual_blob_path)
         midi_data = source_blob.download_blob().readall()
 
         # Convert with music21
@@ -312,7 +328,8 @@ def library_musicxml(req: func.HttpRequest) -> func.HttpResponse:
             os.unlink(tmp_path)
 
         # Cache the MusicXML
-        cache_blob.upload_blob(musicxml_str.encode("utf-8"), overwrite=True, content_settings={"content_type": "application/xml"})
+        from azure.storage.blob import ContentSettings
+        cache_blob.upload_blob(musicxml_str.encode("utf-8"), overwrite=True, content_settings=ContentSettings(content_type="application/xml"))
 
         # Return URL
         sas = generate_blob_sas(
