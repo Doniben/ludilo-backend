@@ -207,3 +207,65 @@ Los archivos `.gp` son **más ricos** que MIDI para nuestro caso de uso:
 
 - Generar MIDI derivado de cada .gp (batch o on-demand) para servir piano roll sin conversión en tiempo real
 - Enriquecer metadata de .gp con PyGuitarPro (instrumentos, afinación, tempo) — tarea background
+
+## Sesión 16-17 mayo 2026 — Resumen
+
+### Sprint 6 (Biblioteca) — Completado
+- Biblioteca GP: 66K archivos indexados con artista/título/format/source
+- Biblioteca Lakh: 178K MIDIs re-indexados con pretty_midi (72% con título)
+- Biblioteca LA MIDI: 404K en progreso (48%, ~8h restantes)
+- AcoustID integrado con fpcalc server-side en Azure Functions
+- Matching: por nombre de archivo + AcoustID post-upload
+- Endpoint /library/search con filtros (source=guitarpro|midi|ludilo)
+- Endpoint /library/identify (fpcalc + AcoustID)
+- Endpoint /library/use (registrar canción de biblioteca)
+- Endpoint /library/preview (URL temporal SAS)
+- Endpoint /library/musicxml (MIDI → MusicXML con music21, cacheado)
+- Fix: Lakh paths (lakh/ → lakh/lmd_full/ en preview/musicxml)
+- Priorización: GP > Lakh > LA MIDI en resultados
+
+### Sprint 8 (Partitura & Tab) — En progreso
+- AlphaTabView: renderiza .gp con tablatura/partitura/piano roll
+- SpessaSynth: playback con soundfont (5 opciones: Fast→Ultra, cacheados)
+- Mixer: control de volumen por track con mute
+- Cursor sincronizado con time signatures reales
+- Control de velocidad (25-150%)
+- Loop básico (10s desde posición actual)
+- Piano Roll Synthesia: notas cayendo + teclado HTML con glow
+- ScoreView: OSMD renderiza MusicXML para archivos MIDI
+- MidiPlayer: reproductor SpessaSynth para archivos MIDI
+- MidiPreview: preview inline en biblioteca (GP + MIDI) con SpessaSynth singleton
+- QualityBadge: indicador visual de calidad (5 barras GP, 3 barras MIDI, L Ludilo)
+- Library viewer: /library/view con botón "Agregar a mis canciones"
+
+### Pendientes inmediatos
+- Cursor OSMD sincronizado con SpessaSynth (implementado, por probar)
+- Fix: programa inicial SpessaSynth (piano suena como otro instrumento primera vez)
+- Piano Roll para MIDI (PianoRollView con fileUrl)
+- Sprint 3: Worker GPU (Demucs + Basic Pitch)
+- Deploy frontend
+- Quitar console.logs de debug
+
+### Archivos clave modificados
+- Backend: functions/routes/library.py (todos los endpoints de biblioteca)
+- Backend: functions/routes/upload.py (delete song, blobPath en response)
+- Backend: functions/requirements.txt (music21 agregado)
+- Backend: bin/fpcalc (binario Linux para Azure Functions)
+- Frontend: src/components/AlphaTabView.jsx (visor GP completo)
+- Frontend: src/components/MidiPlayer.jsx (reproductor MIDI)
+- Frontend: src/components/MidiPreview.jsx (preview inline con SpessaSynth singleton)
+- Frontend: src/components/ScoreView.jsx (OSMD + cursor)
+- Frontend: src/components/PianoRollView.jsx (canvas horizontal)
+- Frontend: src/components/QualityBadge.jsx (indicador de calidad)
+- Frontend: src/pages/SongView.jsx (visor unificado GP/MIDI)
+- Frontend: src/pages/Library.jsx (búsqueda + filtros + preview)
+- Frontend: src/pages/Dashboard.jsx (matching + upload flow)
+
+### Procesos background (17 mayo)
+- LA MIDI: 193K/404K (48%) — corriendo PID 65138
+- Lakh re-index: ✅ completo
+- GP source fix: ✅ completo
+
+### Commits sin push
+- Backend: 15 commits
+- Frontend: 19 commits

@@ -323,6 +323,9 @@ def library_musicxml(req: func.HttpRequest) -> func.HttpResponse:
 
         try:
             score = music21.converter.parse(tmp_path)
+            # Remove Unpitched notes (percussion) that cause export errors
+            for el in list(score.recurse().getElementsByClass('Unpitched')):
+                el.activeSite.remove(el)
             musicxml_str = music21.musicxml.m21ToXml.GeneralObjectExporter(score).parse().decode("utf-8")
         finally:
             os.unlink(tmp_path)
