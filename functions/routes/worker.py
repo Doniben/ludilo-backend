@@ -138,6 +138,25 @@ def complete_job(req: func.HttpRequest) -> func.HttpResponse:
         song["processing_completed"] = datetime.now(timezone.utc).isoformat()
         songs.upsert_item(song)
 
+        # Add to public library
+        try:
+            library = get_container("library_index")
+            library.upsert_item({
+                "id": f"ludilo-{job_id}",
+                "title": song.get("title", ""),
+                "artist": song.get("artist", ""),
+                "source": "ludilo",
+                "format": "stems+midi",
+                "blobPath": song.get("originalBlobPath", ""),
+                "stems": results.get("stems", {}),
+                "midiFiles": results.get("midi", {}),
+                "userId": song.get("userId", ""),
+                "duration": song.get("duration"),
+                "indexed_at": datetime.now(timezone.utc).isoformat(),
+            })
+        except Exception:
+            pass  # Non-critical
+
         return response({"ok": True, "song_id": job_id})
     except Exception as e:
         return response({"error": str(e)}, 500)
@@ -166,10 +185,8 @@ def get_upload_url(req: func.HttpRequest) -> func.HttpResponse:
     # Determine container based on path prefix
     if blob_path.startswith("stems/"):
         container = "audio"
-    elif blob_path.startswith("midi/"):
-        container = "midi"
     else:
-        container = "audio"
+        container = "midi"
 
     sas = generate_blob_sas(
         account_name=account,
