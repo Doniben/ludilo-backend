@@ -269,3 +269,16 @@ Los archivos `.gp` son **más ricos** que MIDI para nuestro caso de uso:
 ### Commits sin push
 - Backend: 15 commits
 - Frontend: 19 commits
+
+## Colección Balkan MIDI (subida 18 mayo 2026)
+
+Archivos en Blob Storage: `library/balkan-midi/`
+
+| Archivo | Artista | Canción | Info |
+|---------|---------|---------|------|
+| Poso_Kuca_Birtija.mid | Zabranjeno Pušenje | Pos'o, Kuća, Birtija | Album: Agent tajne sile (1999). Banda de Sarajevo, rock/punk balcánico. |
+| Zeni_Nam_Se_Vukota.mid | Traditional (Balkan folk) | Ženi Nam Se Vukota | Canción folk tradicional balcánica (boda). |
+| Pristao_Sam_Bicu_Sve_Sto_Hoce.mid | Centar Film / Televizija Beograd | Pristao Sam, Biću Sve Što Hoće | Canción serbia popular. |
+| Sanjao_Sam_Nocas_Da_Te_Nemam.kar | Bijelo Dugme (Goran Bregović) | Sanjao Sam Noćas Da Te Nemam | Compilación "Velike Rock Balade" (1984). Bijelo Dugme = banda más importante de Yugoslavia. Formato .kar (MIDI karaoke con letra). |
+
+Fuente original: descargados de una página web (no recordada). Buscar más en sitios de MIDI karaoke balcánicos.

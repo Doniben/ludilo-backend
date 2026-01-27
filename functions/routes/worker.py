@@ -11,6 +11,54 @@ from shared.db import get_container
 worker_bp = func.Blueprint()
 
 
+def _notify_user_processing(song):
+    """Send email to user that their song is being processed."""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    user_id = song.get("userId", "")
+    if not user_id:
+        return
+
+    users = get_container("users")
+    user_items = list(users.query_items(
+        f"SELECT c.email, c.name FROM c WHERE c.id = '{user_id}'",
+        enable_cross_partition_query=True
+    ))
+    if not user_items or not user_items[0].get("email"):
+        return
+
+    email = user_items[0]["email"]
+    name = user_items[0].get("name", "")
+    title = song.get("title", "tu cancion")
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="font-family:-apple-system,sans-serif;background:#0a0a0f;padding:20px;">
+<div style="max-width:500px;margin:0 auto;background:#12121a;padding:32px;border-radius:16px;border:1px solid rgba(255,255,255,0.1);">
+  <h1 style="color:#06ffd2;font-size:20px;margin:0 0 16px 0;">Ludilo</h1>
+  <p style="color:#fff;font-size:16px;margin:0 0 8px 0;">Procesando: {title}</p>
+  <p style="color:#9ca3af;font-size:14px;margin:0 0 24px 0;">Estamos separando los instrumentos y generando la tablatura. En aproximadamente 2 minutos estara lista.</p>
+  <div style="background:#1a1a26;border-radius:8px;padding:12px 16px;">
+    <p style="color:#06ffd2;font-size:13px;margin:0;">Te notificaremos cuando este lista para practicar.</p>
+  </div>
+</div>
+</body></html>"""
+
+    msg = MIMEMultipart()
+    msg['From'] = "sai@esperanto.co"
+    msg['To'] = email
+    msg['Subject'] = f"Ludilo: procesando {title}"
+    msg.attach(MIMEText(html, 'html'))
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login("sai@esperanto.co", os.environ.get("SMTP_PASSWORD", ""))
+    server.sendmail("sai@esperanto.co", email, msg.as_string())
+    server.quit()
+
+
 @worker_bp.function_name("worker_claim")
 @worker_bp.route(route="worker/claim", methods=["POST", "OPTIONS"])
 def claim_job(req: func.HttpRequest) -> func.HttpResponse:
@@ -42,6 +90,12 @@ def claim_job(req: func.HttpRequest) -> func.HttpResponse:
     song["worker_node"] = node_id
     song["processing_started"] = datetime.now(timezone.utc).isoformat()
     songs.upsert_item(song)
+
+    # Notify user that processing started
+    try:
+        _notify_user_processing(song)
+    except:
+        pass
 
     # Generate SAS URL for the audio blob
     from azure.storage.blob import generate_blob_sas, BlobSasPermissions
@@ -135,6 +189,7 @@ def complete_job(req: func.HttpRequest) -> func.HttpResponse:
         song["progress"] = 100
         song["stems"] = results.get("stems", {})
         song["midiFiles"] = results.get("midi", {})
+        song["chords"] = results.get("chords", [])
         song["processing_completed"] = datetime.now(timezone.utc).isoformat()
         songs.upsert_item(song)
 

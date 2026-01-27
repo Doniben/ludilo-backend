@@ -145,6 +145,13 @@ def process_song(req: func.HttpRequest) -> func.HttpResponse:
     song["status"] = "queued"
     songs_container.upsert_item(body=song)
 
+    # Activate notification flag for worker
+    try:
+        ws = get_container("worker_status")
+        ws.upsert_item({"id": "notify_flag", "active": True})
+    except:
+        pass
+
     # Update user lastUpload
     users_container = get_container("users")
     user["lastUpload"] = datetime.now(timezone.utc).isoformat()
@@ -187,6 +194,8 @@ def song_status(req: func.HttpRequest) -> func.HttpResponse:
         "status": song["status"],
         "stems": song.get("stems", []),
         "midiFiles": song.get("midiFiles", []),
+        "chords": song.get("chords", []),
+        "originalBlobPath": song.get("originalBlobPath", ""),
     })
 
 
@@ -200,7 +209,7 @@ def list_songs(req: func.HttpRequest) -> func.HttpResponse:
         return response({"error": "Unauthorized"}, 401)
 
     container = get_container("songs")
-    query = "SELECT c.id, c.title, c.status, c.format, c.createdAt FROM c WHERE c.userId = @userId ORDER BY c.createdAt DESC"
+    query = "SELECT c.id, c.title, c.status, c.format, c.createdAt, c.stems, c.midiFiles, c.progress, c.originalBlobPath, c.chords FROM c WHERE c.userId = @userId ORDER BY c.createdAt DESC"
     songs = list(container.query_items(query=query, parameters=[{"name": "@userId", "value": user["id"]}], enable_cross_partition_query=True))
 
     # Add queue position for queued songs

@@ -249,15 +249,18 @@ def library_preview(req: func.HttpRequest) -> func.HttpResponse:
         if blob_path.startswith("lakh/") and not blob_path.startswith("lakh/lmd_full/"):
             actual_path = blob_path.replace("lakh/", "lakh/lmd_full/", 1)
 
+        # Determine container
+        container_name = "audio" if blob_path.startswith("stems/") else "midi" if "/" in blob_path and not blob_path.startswith("lakh/") and not blob_path.startswith("la-midi/") and not blob_path.startswith("guitarpro/") and blob_path.endswith(".mid") else "library"
+
         sas = generate_blob_sas(
             account_name=account_name,
-            container_name="library",
+            container_name=container_name,
             blob_name=actual_path,
             account_key=account_key,
             permission=BlobSasPermissions(read=True),
             expiry=datetime.now(timezone.utc) + timedelta(minutes=10),
         )
-        url = f"https://{account_name}.blob.core.windows.net/library/{actual_path}?{sas}"
+        url = f"https://{account_name}.blob.core.windows.net/{container_name}/{actual_path}?{sas}"
         return response({"url": url})
     except Exception as e:
         logging.error(f"Library preview error: {e}")
@@ -306,7 +309,11 @@ def library_musicxml(req: func.HttpRequest) -> func.HttpResponse:
             pass  # Not cached, generate
 
         # Download MIDI
-        source_container = blob_service.get_container_client("library")
+        # Determine container: stem MIDIs are in "midi", library MIDIs in "library"
+        if blob_path.startswith("lakh/") or blob_path.startswith("la-midi/") or blob_path.startswith("guitarpro/"):
+            source_container = blob_service.get_container_client("library")
+        else:
+            source_container = blob_service.get_container_client("midi")
         # Fix Lakh paths
         actual_blob_path = blob_path
         if blob_path.startswith("lakh/") and not blob_path.startswith("lakh/lmd_full/"):
