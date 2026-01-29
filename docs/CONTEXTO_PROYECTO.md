@@ -282,3 +282,62 @@ Archivos en Blob Storage: `library/balkan-midi/`
 | Sanjao_Sam_Nocas_Da_Te_Nemam.kar | Bijelo Dugme (Goran Bregović) | Sanjao Sam Noćas Da Te Nemam | Compilación "Velike Rock Balade" (1984). Bijelo Dugme = banda más importante de Yugoslavia. Formato .kar (MIDI karaoke con letra). |
 
 Fuente original: descargados de una página web (no recordada). Buscar más en sitios de MIDI karaoke balcánicos.
+
+
+## Sesión 18-20 mayo 2026 — Resumen
+
+### Sprint 3 (Worker) — Completado
+- Worker node: ludilo-worker repo en GitHub (Doniben/ludilo-worker)
+- Pipeline: Demucs htdemucs_ft (4 stems) + htdemucs_6s (guitar/piano) → Basic Pitch ONNX → Upload
+- Detección de silencio: stems vacíos no se suben ni procesan
+- Conversión WAV→MP3 192kbps antes de subir (~92% menos peso)
+- Chord detection: chord-extractor (Chordino) — acordes con timestamps
+- Retries en upload (3 intentos)
+- Probado en A1000 con CUDA: ~2-3 min por canción
+- Polling cada 2 min cuando no hay jobs
+- Dependencias: numpy==1.26.4 (pinned), basic-pitch[onnx], demucs, chord-extractor
+
+### Sprint 4 (Stem Player) — Completado (8/9)
+- StemPlayer: Web Audio API, 6 stems simultáneos
+- Solo/Mute/Volume por instrumento con colores
+- Barra de progreso con seek
+- Speed control (25-150%)
+- Cache API para stems (no re-descarga)
+- Spacebar play/pause
+- Selector de instrumento (cambia MIDI visualizado)
+- Fake seqRef para sincronizar visores con stems
+- Falta: waveform (nice-to-have)
+
+### Sprint 5 (ACI) — Parcial
+- Timer cada 5 min: envía email si hay audios en cola
+- Timer cada hora: activa/desactiva flag, apaga ACI si cola vacía
+- Endpoint /aci/start: levanta ACI desde link en email
+- Email al usuario cuando su canción empieza a procesarse
+- PENDIENTE: Dockerfile, ACR, container group con GPU T4
+
+### Sprint 8 (Partitura/Tab MIDI) — Mejoras
+- TabView: acordes arriba de la tablatura (cyan/verde)
+- ScoreView: reset al cambiar instrumento
+- PianoRollView: cambio inmediato de instrumento (refs)
+- Filtros biblioteca: All, Pro, High, Our Own
+
+### Biblioteca
+- LA MIDI: ✅ Completa (404,714 indexados)
+- MUSDB18: 150 masters subidos a blob (library/masters/musdb18/)
+- 4 MIDIs balcánicos subidos e indexados
+- Canciones procesadas se agregan automáticamente a library_index (source=ludilo)
+- QualityBadge: mini logo gradiente para Ludilo
+
+### Worker — Problemas resueltos
+- numpy 2.x incompatible con scipy/vamp del sistema → pin numpy==1.26.4
+- TensorFlow rompe Basic Pitch → desinstalado, Basic Pitch usa ONNX
+- autochord incompatible (necesita TF) → reemplazado por chord-extractor
+- Upload connection refused → retries 3x con 5s delay
+- Stems vacíos → detección RMS < 0.001, skip
+
+### Próxima sesión: ACI
+- Dockerfile: Python 3.10 + CUDA + Demucs + Basic Pitch + chord-extractor
+- Azure Container Registry: subir imagen (~8-10 GB)
+- Container group: GPU T4, restart policy Never
+- Costo estimado: ~$0.02/canción, ~$2/mes para 100 canciones
+- Worker auto-stop: si no hay jobs por 10 min, exit(0)
