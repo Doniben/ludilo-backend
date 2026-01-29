@@ -158,7 +158,7 @@ def library_search(req: func.HttpRequest) -> func.HttpResponse:
         ))[0]
 
         # Fetch page
-        data_query = f"SELECT c.id, c.title, c.artist, c.source, c.format, c.blobPath FROM c WHERE {where} OFFSET {offset} LIMIT {page_size}"
+        data_query = f"SELECT c.id, c.title, c.artist, c.source, c.format, c.blobPath, c.stems FROM c WHERE {where} OFFSET {offset} LIMIT {page_size}"
         items = list(container.query_items(
             query=data_query, parameters=params, enable_cross_partition_query=True
         ))
@@ -250,7 +250,7 @@ def library_preview(req: func.HttpRequest) -> func.HttpResponse:
             actual_path = blob_path.replace("lakh/", "lakh/lmd_full/", 1)
 
         # Determine container
-        container_name = "audio" if blob_path.startswith("stems/") else "midi" if "/" in blob_path and not blob_path.startswith("lakh/") and not blob_path.startswith("la-midi/") and not blob_path.startswith("guitarpro/") and blob_path.endswith(".mid") else "library"
+        container_name = "audio" if blob_path.startswith("stems/") or blob_path.endswith(".mp3") or blob_path.endswith(".wav") or blob_path.endswith(".m4a") or blob_path.endswith(".flac") else "midi" if "/" in blob_path and not blob_path.startswith("lakh/") and not blob_path.startswith("la-midi/") and not blob_path.startswith("guitarpro/") and blob_path.endswith(".mid") else "library"
 
         sas = generate_blob_sas(
             account_name=account_name,

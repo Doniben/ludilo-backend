@@ -223,3 +223,72 @@ def list_songs(req: func.HttpRequest) -> func.HttpResponse:
             s["position"] = i + 1
 
     return response({"songs": songs})
+
+
+
+@bp.function_name("song_lyrics")
+@bp.route(route="songs/{songId}/lyrics", methods=["GET", "OPTIONS"])
+def song_lyrics(req: func.HttpRequest) -> func.HttpResponse:
+    """Get synced lyrics - check DB first, fetch from LRCLIB if not found."""
+    if req.method == "OPTIONS":
+        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+
+    user = get_user_from_token(req)
+    if not user:
+        return response({"error": "Unauthorized"}, 401)
+
+    song_id = req.route_params.get("songId")
+    songs = get_container("songs")
+
+    try:
+        song = songs.read_item(item=song_id, partition_key=user["id"])
+    except:
+        return response({"error": "Song not found"}, 404)
+
+    # Return cached lyrics if available
+    if song.get("lyrics"):
+        return response({"lyrics": song["lyrics"]})
+
+    # Fetch from LRCLIB
+    import requests as req_lib
+    title = song.get("title", "")
+    artist = song.get("artist", "")
+
+    def search_lrclib(params):
+        r = req_lib.get("https://lrclib.net/api/search", params=params, timeout=10)
+        if r.status_code == 200:
+            results = r.json()
+            for item in results:
+                if item.get("syncedLyrics"):
+                    return item["syncedLyrics"]
+            for item in results:
+                if item.get("plainLyrics"):
+                    return item["plainLyrics"]
+        return None
+
+    try:
+        lyrics = None
+
+        # Strategy 1: use artist + title if available
+        if artist:
+            lyrics = search_lrclib({"artist_name": artist, "track_name": title})
+
+        # Strategy 2: split title by " - " and try both combinations
+        if not lyrics and " - " in title:
+            parts = title.split(" - ", 1)
+            lyrics = search_lrclib({"artist_name": parts[0].strip(), "track_name": parts[1].strip()})
+            if not lyrics:
+                lyrics = search_lrclib({"artist_name": parts[1].strip(), "track_name": parts[0].strip()})
+
+        # Strategy 3: full title as track_name
+        if not lyrics:
+            lyrics = search_lrclib({"track_name": title})
+
+        if lyrics:
+            song["lyrics"] = lyrics
+            songs.upsert_item(song)
+            return response({"lyrics": lyrics})
+
+        return response({"lyrics": None, "message": "No lyrics found"})
+    except Exception as e:
+        return response({"lyrics": None, "message": str(e)})

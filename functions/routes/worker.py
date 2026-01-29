@@ -97,6 +97,13 @@ def claim_job(req: func.HttpRequest) -> func.HttpResponse:
     except:
         pass
 
+    # Deactivate notify flag (worker is active)
+    try:
+        from shared.db import get_container as get_db_container
+        get_db_container("worker_status").upsert_item({"id": "notify_flag", "active": False})
+    except:
+        pass
+
     # Generate SAS URL for the audio blob
     from azure.storage.blob import generate_blob_sas, BlobSasPermissions
     account = os.environ.get("STORAGE_ACCOUNT", "stludilo")

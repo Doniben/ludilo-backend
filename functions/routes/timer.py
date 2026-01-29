@@ -156,16 +156,90 @@ def start_aci(req: func.HttpRequest) -> func.HttpResponse:
     try:
         from azure.mgmt.containerinstance import ContainerInstanceManagementClient
         from azure.identity import DefaultAzureCredential
+        from azure.mgmt.containerinstance.models import (
+            ContainerGroup, Container, ContainerGroupRestartPolicy,
+            ResourceRequirements, ResourceRequests, ImageRegistryCredential,
+            EnvironmentVariable, OperatingSystemTypes
+        )
 
         credential = DefaultAzureCredential()
         sub_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
         client = ContainerInstanceManagementClient(credential, sub_id)
-        client.container_groups.begin_start("rg-ludilo", "ludilo-worker")
 
-        html = """<!DOCTYPE html><html><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
-        <div style="text-align:center;"><h1 style="color:#06ffd2;">Worker iniciado</h1><p>El ACI esta procesando la cola.</p></div></body></html>"""
+        # Check if already running
+        try:
+            group = client.container_groups.get("rg-ludilo", "ludilo-worker")
+            if group.instance_view and group.instance_view.state == "Running":
+                html = """<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=http://localhost:5173/aci/logs"></head><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
+                <div style="text-align:center;"><h1 style="color:#06ffd2;">Worker ya activo</h1><p>Redirigiendo a logs...</p></div></body></html>"""
+                return func.HttpResponse(html, mimetype="text/html")
+        except:
+            pass
+
+        # Delete if exists, then recreate
+        try:
+            client.container_groups.begin_delete("rg-ludilo", "ludilo-worker").wait()
+        except:
+            pass
+
+        container = Container(
+            name="worker",
+            image="ludiloacr.azurecr.io/ludilo-worker:cpu-v3",
+            resources=ResourceRequirements(requests=ResourceRequests(cpu=8, memory_in_gb=16)),
+            environment_variables=[EnvironmentVariable(name="LUDILO_AUTO_STOP", value="120")]
+        )
+        group = ContainerGroup(
+            location="eastus",
+            containers=[container],
+            os_type=OperatingSystemTypes.LINUX,
+            restart_policy=ContainerGroupRestartPolicy.NEVER,
+            image_registry_credentials=[ImageRegistryCredential(
+                server="ludiloacr.azurecr.io",
+                username="ludiloacr",
+                password=os.environ.get("ACR_PASSWORD", "")
+            )]
+        )
+        client.container_groups.begin_create_or_update("rg-ludilo", "ludilo-worker", group)
+
+        html = """<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=http://localhost:5173/aci/logs"></head><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
+        <div style="text-align:center;"><h1 style="color:#06ffd2;">Worker iniciado</h1><p>Redirigiendo a logs...</p></div></body></html>"""
         return func.HttpResponse(html, mimetype="text/html")
     except Exception as e:
         html = f"""<!DOCTYPE html><html><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
         <div style="text-align:center;"><h1 style="color:#fbbf24;">ACI pendiente de configurar</h1><p>{str(e)[:200]}</p></div></body></html>"""
         return func.HttpResponse(html, mimetype="text/html")
+
+
+@bp.function_name("aci_logs")
+@bp.route(route="aci/logs", methods=["GET", "OPTIONS"])
+def aci_logs(req: func.HttpRequest) -> func.HttpResponse:
+    """Return ACI container logs as JSON."""
+    if req.method == "OPTIONS":
+        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+
+    try:
+        from azure.mgmt.containerinstance import ContainerInstanceManagementClient
+        from azure.identity import DefaultAzureCredential
+
+        credential = DefaultAzureCredential()
+        sub_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
+        client = ContainerInstanceManagementClient(credential, sub_id)
+
+        # Get container state
+        group = client.container_groups.get("rg-ludilo", "ludilo-worker")
+        state = group.instance_view.state if group.instance_view else "Unknown"
+
+        # Get logs
+        logs = client.containers.list_logs("rg-ludilo", "ludilo-worker", "worker")
+        content = logs.content or ""
+
+        # Clean tqdm float noise (35.099999 → 35.1)
+        import re
+        content = re.sub(r'(\d+\.\d)\d{5,}', r'\1', content)
+
+        return response({"state": state, "logs": content})
+    except Exception as e:
+        err = str(e)
+        if "InternalServerError" in err or "not ready" in err:
+            return response({"state": "Starting", "logs": ""})
+        return response({"state": "error", "logs": err})
