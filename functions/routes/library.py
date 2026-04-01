@@ -356,3 +356,23 @@ def library_musicxml(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"MusicXML conversion error: {e}")
         return response({"error": str(e)}, 500)
+
+
+
+@bp.function_name("library_stats")
+@bp.route(route="library/stats", methods=["GET", "OPTIONS"])
+def library_stats(req: func.HttpRequest) -> func.HttpResponse:
+    """Return track counts by source."""
+    if req.method == "OPTIONS":
+        return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
+
+    container = get_container("library_index")
+    counts = {}
+    for source in ["guitarpro", "la-midi", "lakh", "ludilo"]:
+        q = f"SELECT VALUE COUNT(1) FROM c WHERE c.source = '{source}'"
+        result = list(container.query_items(query=q, enable_cross_partition_query=True))
+        counts[source] = result[0] if result else 0
+
+    counts["midi"] = counts.pop("la-midi", 0) + counts.pop("lakh", 0)
+    counts["total"] = sum(counts.values())
+    return response(counts)
