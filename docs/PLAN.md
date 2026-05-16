@@ -1,6 +1,6 @@
 # 🎸 Ludilo — Plan de Desarrollo
 
-> "Instrumento musical" en esperanto. Guitar Pro online con separación de stems, conversión a MIDI, y visualización interactiva.
+> "Instrumento musical" en esperanto. Plataforma de aprendizaje musical con separación de stems, conversión a MIDI, y visualización interactiva.
 
 ## Visión del Producto
 

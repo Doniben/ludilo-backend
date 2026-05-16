@@ -1,6 +1,6 @@
 # 🎸 Ludilo Backend
 
-Backend de Ludilo — Guitar Pro online con separación de stems, conversión a MIDI, y visualización interactiva.
+Backend de Ludilo — Plataforma de aprendizaje musical con separación de stems, conversión a MIDI, y visualización interactiva.
 
 ## Stack
 
