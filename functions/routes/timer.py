@@ -170,7 +170,7 @@ def start_aci(req: func.HttpRequest) -> func.HttpResponse:
         try:
             group = client.container_groups.get("rg-ludilo", "ludilo-worker")
             if group.instance_view and group.instance_view.state == "Running":
-                html = """<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=http://localhost:5173/aci/logs"></head><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
+                html = """<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=https://ludilo.esperanto.co/aci/logs"></head><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
                 <div style="text-align:center;"><h1 style="color:#06ffd2;">Worker ya activo</h1><p>Redirigiendo a logs...</p></div></body></html>"""
                 return func.HttpResponse(html, mimetype="text/html")
         except:
@@ -201,7 +201,7 @@ def start_aci(req: func.HttpRequest) -> func.HttpResponse:
         )
         client.container_groups.begin_create_or_update("rg-ludilo", "ludilo-worker", group)
 
-        html = """<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=http://localhost:5173/aci/logs"></head><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
+        html = """<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2;url=https://ludilo.esperanto.co/aci/logs"></head><body style="font-family:sans-serif;background:#0a0a0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;">
         <div style="text-align:center;"><h1 style="color:#06ffd2;">Worker iniciado</h1><p>Redirigiendo a logs...</p></div></body></html>"""
         return func.HttpResponse(html, mimetype="text/html")
     except Exception as e:
