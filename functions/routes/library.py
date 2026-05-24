@@ -202,6 +202,7 @@ def library_use(req: func.HttpRequest) -> func.HttpResponse:
     artist = body.get("artist", "")
     source = body.get("source", "")
     fmt = body.get("format", "")
+    original_user_id = body.get("originalUserId", "")
 
     if not blob_path:
         return response({"error": "blobPath required"}, 400)
@@ -214,6 +215,7 @@ def library_use(req: func.HttpRequest) -> func.HttpResponse:
         "status": "done",
         "source": "library",
         "librarySource": source,
+        "originalUserId": original_user_id,
         "originalBlobPath": blob_path,
         "format": fmt,
         "stems": [],

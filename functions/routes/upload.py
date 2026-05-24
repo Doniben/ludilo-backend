@@ -221,7 +221,7 @@ def list_songs(req: func.HttpRequest) -> func.HttpResponse:
         return response({"error": "Unauthorized"}, 401)
 
     container = get_container("songs")
-    query = "SELECT c.id, c.title, c.status, c.format, c.createdAt, c.stems, c.midiFiles, c.progress, c.originalBlobPath, c.chords FROM c WHERE c.userId = @userId ORDER BY c.createdAt DESC"
+    query = "SELECT c.id, c.title, c.status, c.format, c.createdAt, c.stems, c.midiFiles, c.progress, c.originalBlobPath, c.chords, c.source, c.librarySource, c.originalUserId FROM c WHERE c.userId = @userId ORDER BY c.createdAt DESC"
     songs = list(container.query_items(query=query, parameters=[{"name": "@userId", "value": user["id"]}], enable_cross_partition_query=True))
 
     # Add queue position for queued songs
