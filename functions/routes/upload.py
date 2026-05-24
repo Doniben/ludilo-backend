@@ -208,6 +208,7 @@ def song_status(req: func.HttpRequest) -> func.HttpResponse:
         "chords": song.get("chords", []),
         "originalBlobPath": song.get("originalBlobPath", ""),
         "userId": song.get("userId", ""),
+        "originalUserId": song.get("originalUserId", ""),
     })
 
 
