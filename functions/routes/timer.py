@@ -62,15 +62,68 @@ def stop_aci():
         logging.info(f"ACI stop (may not exist yet): {e}")
 
 
+def get_queue_users():
+    """Get usernames of users with queued songs (max 30)."""
+    container = get_container("songs")
+    songs = list(container.query_items(
+        "SELECT DISTINCT c.userId FROM c WHERE c.status = 'queued'",
+        enable_cross_partition_query=True
+    ))
+    user_ids = [s["userId"] for s in songs]
+    if not user_ids:
+        return ""
+    users_container = get_container("users")
+    names = []
+    for uid in user_ids[:30]:
+        try:
+            u = users_container.read_item(item=uid, partition_key=uid)
+            names.append(u.get("username") or u.get("email", "?"))
+        except:
+            names.append("?")
+    result = ", ".join(names)
+    if len(user_ids) > 30:
+        result += " ..."
+    return result
+
+
+def get_last_processed():
+    """Get the last processed song info."""
+    container = get_container("songs")
+    items = list(container.query_items(
+        "SELECT TOP 1 c.title, c.userId FROM c WHERE c.status = 'done' ORDER BY c.createdAt DESC",
+        enable_cross_partition_query=True
+    ))
+    if not items:
+        return None
+    song = items[0]
+    try:
+        u = get_container("users").read_item(item=song["userId"], partition_key=song["userId"])
+        username = u.get("username") or u.get("email", "?")
+    except:
+        username = "?"
+    return {"title": song.get("title", "?"), "username": username}
+
+
 def send_queue_notification(count):
-    """Send email with queue count and ACI start link."""
+    """Send email with queue count, user list, last processed, and ACI start link."""
     start_link = f"{API_URL}/aci/start?key={os.environ.get('ACI_SECRET', 'ludilo2026')}"
+    users_list = get_queue_users()
+    last = get_last_processed()
+
+    last_html = ""
+    if last:
+        last_html = f"""
+    <div style="background-color: #1a1a26; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0 0 4px 0;">Último procesado</p>
+      <p style="color: #ffffff; font-size: 16px; margin: 0;">{last['title']}</p>
+      <p style="color: #06ffd2; font-size: 14px; margin: 4px 0 0 0;">de {last['username']}</p>
+    </div>"""
 
     html = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
 <body style="font-family: -apple-system, sans-serif; background-color: #0a0a0f; padding: 20px;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: #12121a; padding: 32px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #12121a; padding: 32px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
     <h1 style="color: #06ffd2; font-size: 24px; margin: 0 0 8px 0;">Ludilo</h1>
     <p style="color: #9ca3af; font-size: 14px; margin: 0 0 24px 0;">Canciones en cola</p>
     
@@ -78,6 +131,8 @@ def send_queue_notification(count):
       <p style="color: #ffffff; font-size: 48px; font-weight: bold; margin: 0;">{count}</p>
       <p style="color: #9ca3af; font-size: 14px; margin: 4px 0 0 0;">audios esperando</p>
     </div>
+    {last_html}
+    <p style="color: #e5e7eb; font-size: 13px; margin: 0 0 16px 0; text-align: left;">{users_list}</p>
     
     <a href="{start_link}" style="display: block; text-align: center; background: linear-gradient(135deg, #06ffd2, #ff06c4); color: #000; font-weight: bold; font-size: 16px; padding: 16px 32px; border-radius: 12px; text-decoration: none; margin-bottom: 16px;">
       Iniciar Worker (ACI)

@@ -178,15 +178,26 @@ def song_status(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse("", status_code=204, headers=CORS_HEADERS)
 
     user = get_user_from_token(req)
-    if not user:
-        return response({"error": "Unauthorized"}, 401)
-
     song_id = req.route_params.get("songId")
+    song = None
 
-    try:
-        song = get_container("songs").read_item(item=song_id, partition_key=user["id"])
-    except Exception:
-        return response({"error": "Song not found"}, 404)
+    # Try user's partition first
+    if user:
+        try:
+            song = get_container("songs").read_item(item=song_id, partition_key=user["id"])
+        except Exception:
+            pass
+
+    # Fallback: cross-partition public read
+    if not song:
+        items = list(get_container("songs").query_items(
+            "SELECT * FROM c WHERE c.id = @id AND c.status = 'done'",
+            parameters=[{"name": "@id", "value": song_id}],
+            enable_cross_partition_query=True
+        ))
+        if not items:
+            return response({"error": "Song not found"}, 404)
+        song = items[0]
 
     return response({
         "id": song["id"],
@@ -196,6 +207,7 @@ def song_status(req: func.HttpRequest) -> func.HttpResponse:
         "midiFiles": song.get("midiFiles", []),
         "chords": song.get("chords", []),
         "originalBlobPath": song.get("originalBlobPath", ""),
+        "userId": song.get("userId", ""),
     })
 
 
