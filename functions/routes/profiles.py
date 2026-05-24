@@ -36,7 +36,7 @@ def user_songs(req: func.HttpRequest) -> func.HttpResponse:
 
     user_id = req.route_params.get("userId")
     songs = list(get_container("songs").query_items(
-        "SELECT c.id, c.title, c.status, c.createdAt, c.source, c.format, c.stems, c.midiFiles FROM c WHERE c.userId = @uid AND c.status = 'done'",
+        "SELECT c.id, c.title, c.status, c.createdAt, c.source, c.format, c.stems, c.midiFiles, c.originalBlobPath FROM c WHERE c.userId = @uid AND c.status = 'done'",
         parameters=[{"name": "@uid", "value": user_id}],
         partition_key=user_id
     ))
