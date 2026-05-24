@@ -207,6 +207,25 @@ def library_use(req: func.HttpRequest) -> func.HttpResponse:
     if not blob_path:
         return response({"error": "blobPath required"}, 400)
 
+    # For ludilo songs, copy stems/midi from original
+    original_stems = {}
+    original_midi = {}
+    if source == "ludilo" and original_user_id:
+        try:
+            orig_songs = list(get_container("songs").query_items(
+                "SELECT c.stems, c.midiFiles FROM c WHERE c.userId = @uid AND c.originalBlobPath = @bp",
+                parameters=[{"name": "@uid", "value": original_user_id}, {"name": "@bp", "value": blob_path}],
+                partition_key=original_user_id
+            ))
+            if orig_songs:
+                s = orig_songs[0]
+                if isinstance(s.get("stems"), dict):
+                    original_stems = s["stems"]
+                if isinstance(s.get("midiFiles"), dict):
+                    original_midi = s["midiFiles"]
+        except:
+            pass
+
     song_id = secrets.token_hex(16)
     song = {
         "id": song_id,
@@ -218,8 +237,8 @@ def library_use(req: func.HttpRequest) -> func.HttpResponse:
         "originalUserId": original_user_id,
         "originalBlobPath": blob_path,
         "format": fmt,
-        "stems": [],
-        "midiFiles": [blob_path],
+        "stems": original_stems or [],
+        "midiFiles": original_midi or [blob_path],
         "createdAt": datetime.now(timezone.utc).isoformat(),
     }
     get_container("songs").create_item(body=song)
