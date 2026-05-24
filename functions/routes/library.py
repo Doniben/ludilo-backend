@@ -207,6 +207,15 @@ def library_use(req: func.HttpRequest) -> func.HttpResponse:
     if not blob_path:
         return response({"error": "blobPath required"}, 400)
 
+    # Check if user already has this song
+    existing = list(get_container("songs").query_items(
+        "SELECT VALUE COUNT(1) FROM c WHERE c.userId = @uid AND c.originalBlobPath = @bp",
+        parameters=[{"name": "@uid", "value": user["id"]}, {"name": "@bp", "value": blob_path}],
+        partition_key=user["id"]
+    ))
+    if existing and existing[0] > 0:
+        return response({"error": "ALREADY_ADDED"}, 409)
+
     # For ludilo songs, copy stems/midi from original
     original_stems = {}
     original_midi = {}
