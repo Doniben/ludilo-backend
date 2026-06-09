@@ -79,6 +79,7 @@ def upload(req: func.HttpRequest) -> func.HttpResponse:
         "format": ext,
         "fileSize": file_size,
         "status": "uploading",
+        "transcription_model": body.get("transcription_model", "basic-pitch"),
         "stems": [],
         "midiFiles": [],
         "createdAt": datetime.now(timezone.utc).isoformat(),

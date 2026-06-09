@@ -127,6 +127,7 @@ def claim_job(req: func.HttpRequest) -> func.HttpResponse:
         "audio_url": audio_url,
         "title": song.get("title", ""),
         "format": song.get("format", ""),
+        "transcription_model": song.get("transcription_model", "basic-pitch"),
     })
 
 
