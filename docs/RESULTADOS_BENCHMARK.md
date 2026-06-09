@@ -196,3 +196,55 @@ El pipeline **BP + dedup(0.2s)** es una mejora simple y universal:
 3. Modelo fine-tuned en guitarra específicamente
 
 Estos quedan como **pendientes para futuras iteraciones**.
+
+
+---
+
+## Análisis adicional: Velocity, Técnicas y Tablatura
+
+### Filtrado por velocity — NO efectivo
+
+| Vel min | Notes | P | R | F1 | Conclusión |
+|---------|-------|---|---|-----|------------|
+| 0 (sin filtro) | 3709 | 21.1% | 41.7% | 28.0% | Baseline |
+| ≥40 | 3621 | 21.5% | 41.5% | 28.3% | Mínimo |
+| ≥50 | 2962 | 23.2% | 36.7% | 28.4% | Pierde recall |
+| ≥60 | 2101 | 25.9% | 29.0% | 27.4% | Peor |
+
+**Conclusión:** Las notas fantasma de BP tienen velocity similar a las reales (media=63, rango 29-106). No son distinguibles por velocity.
+
+### Detección de técnicas (heurística sobre MIDI)
+
+| Técnica | Detectadas | Método |
+|---------|-----------|--------|
+| Slides | 131 | Notas conectadas, pitch ±1-5 semitonos |
+| Chord strums | 352 | ≥3 notas con onset <30ms |
+| Hammer-ons | 0 | No distinguibles (BP no codifica velocity legato) |
+| Pull-offs | 0 | Mismo problema |
+
+**Utilidad:** Los slides y strums son detectables y mejoran la tablatura. Hammer-ons/pull-offs requieren análisis de audio (no solo MIDI).
+
+### Asignación de posiciones en diapasón — FUNCIONAL
+
+Algoritmo implementado con:
+- Preferencia por cuerdas al aire (open strings)
+- Minimización de movimiento de mano
+- Penalización por posiciones altas
+
+Resultado en NEM (primeros 30s):
+- 202 notas, 0 fuera de rango
+- 32% cuerdas al aire (correcto para esta canción)
+- Fret promedio: 3.7 (posiciones bajas, correcto)
+- Asigna correctamente E2→6(open), B3→2(open), G3→3(open)
+
+### Techo de rendimiento identificado
+
+**BP tiene un techo de ~30% F1 (500ms)** para guitarra en esta configuración:
+- No se mejora con velocity filtering
+- No se mejora con duration filtering  
+- La dedup(0.2s) ya da el máximo beneficio
+
+Para superar el 30%, se necesitaría:
+1. Modelo fine-tuned en guitarra
+2. Análisis espectral del stem para validar detecciones
+3. O usar GP de la biblioteca cuando está disponible (F1=100%)

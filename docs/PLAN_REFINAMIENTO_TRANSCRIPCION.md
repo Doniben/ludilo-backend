@@ -631,9 +631,9 @@ Y MT3+ se usa SOLO para: drums, clasificación de programa MIDI, y stems "other"
 ### Sprint C: Quantización y post-procesamiento
 1. [x] Beat detection con librosa (BPM=73 confirmado)
 2. [x] Quantización adaptativa al grid (1/8 = sweet spot)
-3. [ ] Detección de técnicas (slide, hammer-on, etc.) — **PENDIENTE para otra iteración**
-4. [ ] Asignación de posiciones en diapasón — **PENDIENTE para otra iteración**
-5. [ ] Evaluar con canciones intermedias — **PENDIENTE**
+3. [x] Detección de técnicas (slides, strums detectables; hammer-on no distinguible en MIDI)
+4. [x] Asignación de posiciones en diapasón (algoritmo funcional, open strings correctos)
+5. [ ] Evaluar con canciones intermedias — **PENDIENTE** (requiere procesarlas en worker)
 
 ### Sprint D: Benchmark completo
 1. [ ] Procesar las 11 canciones del benchmark
