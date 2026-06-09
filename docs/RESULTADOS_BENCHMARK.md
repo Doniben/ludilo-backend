@@ -248,3 +248,50 @@ Para superar el 30%, se necesitaría:
 1. Modelo fine-tuned en guitarra
 2. Análisis espectral del stem para validar detecciones
 3. O usar GP de la biblioteca cuando está disponible (F1=100%)
+
+
+---
+
+## Hallazgo crítico: MT3+ guitar tracks (9 junio 2026)
+
+### El error en la evaluación anterior
+
+La evaluación original sumó TODAS las notas del output de MT3+ (14 tracks, 3988 notas). Pero MT3+ clasifica por instrumento. Al extraer SOLO los tracks de guitarra (program 24=clean, 30=distortion):
+
+| Modelo | Notas | Ratio vs GP | Precision (2s) | Recall (2s) | F1 (2s) |
+|--------|-------|-------------|----------------|-------------|---------|
+| BP (stem) + dedup | 3207 | 1.71x | 41.8% | **71.4%** | **52.7%** |
+| MT3+ guitar only + dedup | 1040 | 0.55x | **62.1%** | 34.4% | 44.3% |
+| Intersección BP∩MT3+ | 755 | 0.40x | **56.0%** | 17.8% | 27.0% |
+
+### Interpretación
+
+- **BP:** detecta la mayoría de notas (71% recall) pero con mucho ruido (42% precision)
+- **MT3+:** detecta menos (34% recall) pero lo que detecta es más preciso (62% precision)
+- **Intersección:** demasiado restrictiva — pierde demasiadas notas
+
+### El pipeline ideal (por evaluar)
+
+```
+Audio COMPLETO → MT3+ (sin Demucs) → extrae guitar channels → "filtro de clasificación"
+Audio → Demucs → stem guitar → BP → "todas las notas candidatas"
+
+Merge: BP notes que coinciden con MT3+ guitar channel → MIDI final
+       + BP notes que son chord tones (aunque MT3+ no las tenga)
+```
+
+**Hipótesis:** MT3+ sobre audio completo debería clasificar MEJOR que sobre stem (es su modo natural). Pero usará más VRAM.
+
+### Riesgo VRAM (A1000 = 6GB)
+
+- MT3+ sobre stem: ~0.18GB modelo + batches de segments (bsz=2 funciona)
+- MT3+ sobre audio completo: misma VRAM para el modelo, pero más segments por procesar (más tiempo, no más VRAM per-batch)
+- **Riesgo real:** si la canción es larga (>5 min), habrá ~250+ segments. Con bsz=2 no debería haber OOM, pero será más lento (~15-20 min para el full audio).
+
+### Configuración para evaluar en A1000
+
+El worker ahora ofrece modo `hybrid`:
+- Paso 1: MT3+ sobre audio completo → guitar_channels.mid
+- Paso 2: BP sobre stem guitarra (de Demucs) → all_notes.mid
+- Paso 3: Merge → notas de BP confirmadas por MT3+ + chord tones
+- Logs de VRAM en cada paso para monitorear
