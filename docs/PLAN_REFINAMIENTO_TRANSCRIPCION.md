@@ -646,9 +646,9 @@ Y MT3+ se usa SOLO para: drums, clasificación de programa MIDI, y stems "other"
 - Si el merge híbrido no supera BP+dedup → no implementar MT3+ para melódicos
 - MT3+ se mantiene SOLO para drums y clasificación
 
-### Sprint E: Integración en worker
-1. [ ] Agregar deduplicación post-BP en `ludilo.py` (cambio mínimo)
-2. [ ] Agregar quantización opcional
+### Sprint E: Integración en worker — EN PROGRESO
+1. [x] Agregar deduplicación post-BP en `ludilo.py` → `refine_midi()` línea 422
+2. [x] Agregar quantización opcional (integrada en `refine_midi()`)
 3. [ ] Opción de usuario: "Rápido" (BP+dedup) vs "Calidad" (BP+MT3++clasificación)
 4. [ ] Servir MIDI refinado al frontend
 5. [ ] Validar tablatura generada vs GP original
