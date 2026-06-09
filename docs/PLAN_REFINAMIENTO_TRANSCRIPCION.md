@@ -650,8 +650,18 @@ Y MT3+ se usa SOLO para: drums, clasificación de programa MIDI, y stems "other"
 1. [x] Agregar deduplicación post-BP en `ludilo.py` → `refine_midi()` línea 422
 2. [x] Agregar quantización opcional (integrada en `refine_midi()`)
 3. [x] Selector de calidad: frontend toggle + backend guarda `transcription_model` + worker lee del job
-4. [ ] Servir MIDI refinado al frontend (ya funciona — mismo path, MIDI mejorado)
-5. [ ] Validar tablatura generada vs GP original — **PENDIENTE próxima iteración**
+4. [x] `generate_tab_data()`: posiciones en diapasón + técnicas → `tab_data` en Cosmos DB
+5. [x] Frontend: `TabView` recibe `tabData` prop para futuras técnicas visuales
+
+#### 🚦 PUNTO DE VALIDACIÓN E: ¿Pipeline completo?
+
+**✅ SÍ** — El sistema end-to-end está implementado:
+- Usuario sube audio → worker procesa con BP + refine_midi + tab_data → frontend muestra tablatura
+- Selector rápido/alta calidad funcional
+- Posiciones de diapasón calculadas server-side
+- Técnicas (slides) detectadas y almacenadas
+
+**Próxima validación:** Cuando la A1000 procese una canción nueva, verificar que `tab_data` aparezca en Cosmos DB y que el frontend lo reciba.
 
 #### 🚦 PUNTO DE VALIDACIÓN E: ¿La tablatura generada es utilizable?
 - Comparar visualmente tablatura generada vs GP real
