@@ -198,6 +198,7 @@ def complete_job(req: func.HttpRequest) -> func.HttpResponse:
         song["stems"] = results.get("stems", {})
         song["midiFiles"] = results.get("midi", {})
         song["chords"] = results.get("chords", [])
+        song["tab_data"] = results.get("tab_data", {})
         song["processing_completed"] = datetime.now(timezone.utc).isoformat()
         songs.upsert_item(song)
 
