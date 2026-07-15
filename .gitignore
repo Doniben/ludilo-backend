@@ -4,3 +4,14 @@ __pycache__/
 local.settings.json
 .env
 *.pyc
+
+# Training data (demasiado grande para git)
+training/data/audio/
+training/data/stems/
+training/data/dataset/
+training/data/all_candidates.json
+training/data/selection_progress.json
+training/data/synthesis_progress.json
+training/checkpoints/
+*.wav
+*.mp3

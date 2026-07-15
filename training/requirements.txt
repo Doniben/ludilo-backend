@@ -1,0 +1,33 @@
+# LudiloNet Training Dependencies
+# Instalar en la A1000 con: pip install -r requirements.txt
+
+# Core ML
+torch>=2.0.0
+torchaudio>=2.0.0
+nnAudio>=0.3.2
+
+# Audio processing
+librosa>=0.10.0
+soundfile>=0.12.0
+pretty_midi>=0.2.10
+numpy==1.26.4
+
+# Guitar Pro parsing
+guitarpro>=0.9.0
+
+# Data augmentation
+audiomentations>=0.34.0
+pedalboard>=0.9.0
+
+# Training utilities
+tqdm>=4.65.0
+tensorboard>=2.14.0
+
+# Evaluation
+mir_eval>=0.7
+
+# MIDI synthesis (system dep: fluidsynth)
+midi2audio>=0.1.1
+
+# Source separation (ya instalado en worker)
+demucs>=4.0.0
