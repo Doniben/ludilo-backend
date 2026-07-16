@@ -341,3 +341,26 @@ Fuente original: descargados de una página web (no recordada). Buscar más en s
 - Container group: GPU T4, restart policy Never
 - Costo estimado: ~$0.02/canción, ~$2/mes para 100 canciones
 - Worker auto-stop: si no hay jobs por 10 min, exit(0)
+
+## Tareas Pendientes (25 mayo 2026)
+
+### Worker — Mejoras MIDI
+- [ ] Detectar distorsión en stem de guitarra (análisis espectral/RMS) y asignar program 29/30 en vez de 25
+- [ ] Benchmark automático: para canciones que tienen tanto .gp como audio procesado, comparar MIDI generado vs GP con mir_eval (F1, precision, recall por secciones)
+
+### Perfiles Públicos (implementado 24 mayo)
+- [x] GET /users/{userId}/profile — perfil público
+- [x] GET /users/{userId}/songs — canciones completadas
+- [x] /songs/{songId}/status — lectura pública cross-partition
+- [x] Página /user/:userId en frontend
+- [x] Badge "de X" en SongView + Dashboard
+- [x] Validación de duplicados en /library/use
+- [x] QualityBadge correcto (L/T/corcheas) según source
+
+### Evaluación de Modelos (25 mayo)
+- Canción: Nothing Else Matters (Metallica)
+- Referencia: GP (metallica nothing else matters sm.gp4, Eb tuning, 3551 notas guitarra)
+- BP F1=12.2% | MT3 F1=11.4% (onset+pitch, 100ms tolerancia)
+- BP gana 7/8 secciones, mejor recall en secciones tranquilas
+- MT3 mejor clasificación multi-instrumento (separa guitarra de orquesta)
+- Script: /tmp/ludilo-eval/evaluate.py

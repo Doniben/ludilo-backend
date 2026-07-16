@@ -15,3 +15,4 @@ training/data/synthesis_progress.json
 training/checkpoints/
 *.wav
 *.mp3
+*.DS_Store
